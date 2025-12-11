@@ -1,85 +1,94 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, 
-  Trash2, 
-  Play, 
-  Pause, 
-  CheckCircle, 
-  Circle, 
-  Clock, 
-  Brain, 
-  RotateCcw,
-  Split,
-  X,
-  Moon,
-  Sun,
-  Settings,
-  Volume2,
-  VolumeX,
-  GripVertical,
-  Coffee
+  Plus, Trash2, Play, Pause, CheckCircle, Circle, Clock, Brain, 
+  RotateCcw, Split, X, Moon, Sun, Settings, Volume2, VolumeX, 
+  GripVertical, Coffee, LogIn, LogOut, Database, WifiOff, Loader
 } from 'lucide-react';
 
-// --- Constants & Helpers ---
+// --- FIREBASE IMPORTS ---
+import { initializeApp } from "firebase/app";
+import { 
+  getAuth, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  onAuthStateChanged 
+} from "firebase/auth";
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  onSnapshot 
+} from "firebase/firestore";
+
+// --- ⚠️ CONFIGURATION ⚠️ ---
+// I have inserted your specific keys here:
+const firebaseConfig = {
+  apiKey: "AIzaSyANB_OiYOp1Guz7pbSVbHVVm6QwAtDoJB8",
+  authDomain: "focus-flow-app-53179.firebaseapp.com",
+  projectId: "focus-flow-app-53179",
+  storageBucket: "focus-flow-app-53179.firebasestorage.app",
+  messagingSenderId: "229754553992",
+  appId: "1:229754553992:web:529d2cf000804b9c5d813d"
+};
+
+// --- CONSTANTS ---
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const MAX_TASKS_PER_DAY = 3;
 
-// --- Audio Engine ---
+// --- INITIALIZE FIREBASE (Safe Mode) ---
+let auth, db, provider;
+let isFirebaseInitialized = false;
+
+// We check if keys are generic placeholders. If so, we stay in LocalStorage mode.
+// Since you provided real keys, this will now be TRUE.
+const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+
+if (isConfigured) {
+  try {
+    const app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    provider = new GoogleAuthProvider();
+    isFirebaseInitialized = true;
+  } catch (e) {
+    console.error("Firebase init failed:", e);
+  }
+}
+
+// --- AUDIO ENGINE ---
 const playSound = (type) => {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
-    
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-
     osc.connect(gain);
     gain.connect(ctx.destination);
-    
     const now = ctx.currentTime;
 
     if (type === 'tick') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, now);
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-      osc.start(now);
-      osc.stop(now + 0.1);
-    } 
-    else if (type === 'retro') {
-      osc.type = 'square';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.setValueAtTime(880, now + 0.1);
-      gain.gain.setValueAtTime(0.05, now);
-      gain.gain.linearRampToValueAtTime(0.05, now + 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-      osc.start(now);
-      osc.stop(now + 0.6);
-    } 
-    else if (type === 'bell') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(600, now); 
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
-      osc.start(now);
-      osc.stop(now + 2.0);
-    } 
-    else {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(523.25, now); 
-      osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1); 
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
-      osc.start(now);
-      osc.stop(now + 1.0);
+      osc.type = 'sine'; osc.frequency.setValueAtTime(880, now);
+      gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      osc.start(now); osc.stop(now + 0.1);
+    } else if (type === 'retro') {
+      osc.type = 'square'; osc.frequency.setValueAtTime(440, now); osc.frequency.setValueAtTime(880, now + 0.1);
+      gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0.05, now + 0.1); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      osc.start(now); osc.stop(now + 0.6);
+    } else if (type === 'bell') {
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(600, now);
+      gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
+      osc.start(now); osc.stop(now + 2.0);
+    } else {
+      osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1);
+      gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+      osc.start(now); osc.stop(now + 1.0);
     }
-  } catch (e) {
-    console.error("Audio play failed", e);
-  }
+  } catch (e) { console.error("Audio failed", e); }
 };
 
-// --- Reusable Components ---
+// --- REUSABLE COMPONENTS ---
 const Modal = ({ isOpen, onClose, title, children, isDark }) => {
   if (!isOpen) return null;
   return (
@@ -87,9 +96,7 @@ const Modal = ({ isOpen, onClose, title, children, isDark }) => {
       <div className={`w-full max-w-md p-6 rounded-2xl shadow-xl border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-100' : 'bg-white border-gray-200 text-gray-900'}`}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold">{title}</h3>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-            <X size={20} />
-          </button>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"><X size={20} /></button>
         </div>
         {children}
       </div>
@@ -97,38 +104,23 @@ const Modal = ({ isOpen, onClose, title, children, isDark }) => {
   );
 };
 
-// --- Main Application ---
+// --- MAIN APPLICATION ---
 export default function App() {
-  // --- 1. State: Settings & Persistence ---
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem('focusflow_settings');
-    return saved ? JSON.parse(saved) : {
-      focusTime: 25,
-      shortBreak: 5,
-      longBreak: 20,
-      soundEnabled: true,
-      soundType: 'chime',
-      darkMode: false
-    };
-  });
+  // --- USER AUTH STATE ---
+  const [user, setUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
-  const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem('focusflow_tasks');
-    return saved ? JSON.parse(saved) : [];
+  // --- DATA STATE ---
+  const [settings, setSettings] = useState({
+    focusTime: 25, shortBreak: 5, longBreak: 20,
+    soundEnabled: true, soundType: 'chime', darkMode: false
   });
+  const [tasks, setTasks] = useState([]);
+  const [notes, setNotes] = useState([]);
+  const [cycleCount, setCycleCount] = useState(0);
 
-  const [notes, setNotes] = useState(() => {
-    const saved = localStorage.getItem('focusflow_notes');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Cycle Tracking State (0 to 4)
-  const [cycleCount, setCycleCount] = useState(() => {
-    return parseInt(localStorage.getItem('focusflow_cycle')) || 0;
-  });
-
-  // --- 2. State: Timer & UI ---
-  const [timerTime, setTimerTime] = useState(settings.focusTime * 60);
+  // --- TIMER STATE ---
+  const [timerTime, setTimerTime] = useState(25 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerMode, setTimerMode] = useState('focus'); 
   const [activeTaskId, setActiveTaskId] = useState(null);
@@ -138,167 +130,211 @@ export default function App() {
 
   const timerRef = useRef(null);
 
-  // --- 3. Effects (Persistence & Logic) ---
-  useEffect(() => { localStorage.setItem('focusflow_tasks', JSON.stringify(tasks)); }, [tasks]);
-  useEffect(() => { localStorage.setItem('focusflow_notes', JSON.stringify(notes)); }, [notes]);
-  useEffect(() => { localStorage.setItem('focusflow_cycle', cycleCount.toString()); }, [cycleCount]);
+  // --- AUTH & SYNC EFFECTS ---
+  
+  // 1. Listen for User Login
+  useEffect(() => {
+    if (isFirebaseInitialized) {
+      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUser(currentUser);
+        setLoadingAuth(false);
+      });
+      return () => unsubscribe();
+    } else {
+      setLoadingAuth(false);
+    }
+  }, []);
+
+  // 2. Load Data (Firestore OR LocalStorage)
+  useEffect(() => {
+    // Mode A: Firebase Realtime Sync
+    if (isFirebaseInitialized && user) {
+      const userRef = doc(db, "users", user.uid);
+      const unsubscribe = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.settings) setSettings(data.settings);
+          if (data.tasks) setTasks(data.tasks);
+          if (data.notes) setNotes(data.notes);
+          if (data.cycleCount !== undefined) setCycleCount(data.cycleCount);
+        } else {
+          // New user found in DB? Create defaults? 
+          // We handle this by saving current state on next update
+        }
+      });
+      return () => unsubscribe();
+    } 
+    // Mode B: LocalStorage (Fallback)
+    else if (!isFirebaseInitialized || !user) {
+      const sTasks = localStorage.getItem('focusflow_tasks');
+      const sNotes = localStorage.getItem('focusflow_notes');
+      const sSettings = localStorage.getItem('focusflow_settings');
+      const sCycle = localStorage.getItem('focusflow_cycle');
+
+      if (sTasks) setTasks(JSON.parse(sTasks));
+      if (sNotes) setNotes(JSON.parse(sNotes));
+      if (sSettings) setSettings(JSON.parse(sSettings));
+      if (sCycle) setCycleCount(parseInt(sCycle));
+    }
+  }, [user]);
+
+  // 3. Save Data (Debounced/Triggered on change)
+  const saveData = async () => {
+    if (isFirebaseInitialized && user) {
+      // Save to Cloud
+      try {
+        await setDoc(doc(db, "users", user.uid), {
+          tasks, notes, settings, cycleCount
+        }, { merge: true });
+      } catch (e) {
+        console.error("Error saving to cloud:", e);
+      }
+    } else {
+      // Save to Local
+      localStorage.setItem('focusflow_tasks', JSON.stringify(tasks));
+      localStorage.setItem('focusflow_notes', JSON.stringify(notes));
+      localStorage.setItem('focusflow_settings', JSON.stringify(settings));
+      localStorage.setItem('focusflow_cycle', cycleCount.toString());
+    }
+  };
+
+  // Trigger save on important changes
+  useEffect(() => { saveData(); }, [tasks, notes, cycleCount]);
+  
+  // Settings also control CSS immediately
   useEffect(() => { 
-    localStorage.setItem('focusflow_settings', JSON.stringify(settings)); 
+    saveData();
     if (settings.darkMode) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
   }, [settings]);
 
-  // Timer Logic with Auto-Cycle
+
+  // --- TIMER LOGIC ---
   useEffect(() => {
     if (isTimerRunning && timerTime > 0) {
       timerRef.current = setInterval(() => {
         setTimerTime((prev) => {
           const nextTime = prev - 1;
-          // Tick sound last 5 seconds
-          if (settings.soundEnabled && nextTime <= 5 && nextTime > 0) {
-            playSound('tick');
-          }
+          if (settings.soundEnabled && nextTime <= 5 && nextTime > 0) playSound('tick');
           return nextTime;
         });
       }, 1000);
     } else if (timerTime === 0) {
       clearInterval(timerRef.current);
       setIsTimerRunning(false);
-      
-      // Play completion sound
       if (settings.soundEnabled) playSound(settings.soundType);
 
-      // --- CYCLE LOGIC ---
       if (timerMode === 'focus') {
         const newCount = cycleCount + 1;
         setCycleCount(newCount);
-        
         if (newCount >= 4) {
-          // 4th Pomodoro done -> Long Break
-          setTimerMode('long');
-          setTimerTime(settings.longBreak * 60);
+          setTimerMode('long'); setTimerTime(settings.longBreak * 60);
         } else {
-          // Normal Pomodoro done -> Short Break
-          setTimerMode('short');
-          setTimerTime(settings.shortBreak * 60);
+          setTimerMode('short'); setTimerTime(settings.shortBreak * 60);
         }
       } else if (timerMode === 'short') {
-        // Short break done -> Back to Focus
-        setTimerMode('focus');
-        setTimerTime(settings.focusTime * 60);
+        setTimerMode('focus'); setTimerTime(settings.focusTime * 60);
       } else if (timerMode === 'long') {
-        // Long break done -> Reset Cycle -> Back to Focus
-        setCycleCount(0);
-        setTimerMode('focus');
-        setTimerTime(settings.focusTime * 60);
+        setCycleCount(0); setTimerMode('focus'); setTimerTime(settings.focusTime * 60);
       }
     }
     return () => clearInterval(timerRef.current);
   }, [isTimerRunning, timerTime, timerMode, settings, cycleCount]);
 
-  // --- 4. Handlers ---
+  // --- ACTIONS ---
+  const handleLogin = async () => {
+    if (!isFirebaseInitialized) return;
+    try { await signInWithPopup(auth, provider); } catch (e) { console.error(e); }
+  };
+
+  const handleLogout = async () => {
+    if (!isFirebaseInitialized) return;
+    try { 
+      await signOut(auth); 
+      setTasks([]); setNotes([]); setCycleCount(0); // Clear state on logout
+    } catch (e) { console.error(e); }
+  };
+
+  // ... (Previous Helper Functions: toggleTimer, addTask, etc. remain the same) ...
   const toggleTimer = () => setIsTimerRunning(!isTimerRunning);
-  
   const resetTimer = () => {
     setIsTimerRunning(false);
     const time = timerMode === 'focus' ? settings.focusTime : timerMode === 'short' ? settings.shortBreak : settings.longBreak;
     setTimerTime(time * 60);
   };
-
   const switchMode = (mode) => {
-    setIsTimerRunning(false);
-    setTimerMode(mode);
-    // If manually switching to Focus, we don't necessarily reset the cycle unless coming from a completed long break
-    // If manually switching to Long, we might want to pretend cycle is full, but for flexibility let's just switch mode.
+    setIsTimerRunning(false); setTimerMode(mode);
     const time = mode === 'focus' ? settings.focusTime : mode === 'short' ? settings.shortBreak : settings.longBreak;
     setTimerTime(time * 60);
   };
-
-  const resetCycle = () => {
-    setCycleCount(0);
-  };
-
+  const resetCycle = () => setCycleCount(0);
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const mins = Math.floor(seconds / 60); const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
-
-  // Task & Drag Handlers
   const addTask = (dayIndex) => {
-    const dayTasks = tasks.filter(t => t.dayIndex === dayIndex);
-    if (dayTasks.length >= MAX_TASKS_PER_DAY) return;
-    const newTask = { id: Date.now().toString(), dayIndex, content: '', status: 'todo', chunks: [] };
-    setTasks([...tasks, newTask]);
+    if (tasks.filter(t => t.dayIndex === dayIndex).length >= MAX_TASKS_PER_DAY) return;
+    setTasks([...tasks, { id: Date.now().toString(), dayIndex, content: '', status: 'todo', chunks: [] }]);
   };
-
-  const updateTask = (id, field, value) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, [field]: value } : t));
-  };
-
-  const deleteTask = (id) => {
-    setTasks(tasks.filter(t => t.id !== id));
-    if (activeTaskId === id) {
-      setIsTimerRunning(false);
-      setActiveTaskId(null);
-    }
-  };
-
+  const updateTask = (id, field, value) => setTasks(tasks.map(t => t.id === id ? { ...t, [field]: value } : t));
+  const deleteTask = (id) => { setTasks(tasks.filter(t => t.id !== id)); if(activeTaskId === id) { setIsTimerRunning(false); setActiveTaskId(null); }};
   const activateTask = (task) => {
-    if (activeTaskId === task.id) {
-      setIsTimerRunning(!isTimerRunning);
-    } else {
-      setActiveTaskId(task.id);
-      setTimerMode('focus');
-      setTimerTime(settings.focusTime * 60);
-      setIsTimerRunning(true);
-      updateTask(task.id, 'status', 'wip');
-    }
+    if (activeTaskId === task.id) { setIsTimerRunning(!isTimerRunning); } 
+    else { setActiveTaskId(task.id); setTimerMode('focus'); setTimerTime(settings.focusTime * 60); setIsTimerRunning(true); updateTask(task.id, 'status', 'wip'); }
   };
-
   const handleDragStart = (e, taskId) => { setDraggedTaskId(taskId); e.target.style.opacity = '0.5'; };
   const handleDragEnd = (e) => { e.target.style.opacity = '1'; setDraggedTaskId(null); };
   const handleDragOver = (e) => { e.preventDefault(); };
   const handleDrop = (e, dayIndex) => {
     e.preventDefault();
-    const dayTasks = tasks.filter(t => t.dayIndex === dayIndex);
-    if (dayTasks.length >= MAX_TASKS_PER_DAY) return;
+    if (tasks.filter(t => t.dayIndex === dayIndex).length >= MAX_TASKS_PER_DAY) return;
     if (draggedTaskId) setTasks(tasks.map(t => t.id === draggedTaskId ? { ...t, dayIndex: dayIndex } : t));
   };
-
   const addChunk = (taskId) => setTasks(tasks.map(t => t.id === taskId ? { ...t, chunks: [...t.chunks, { id: Date.now(), text: '', done: false }] } : t));
   const updateChunk = (taskId, chunkId, field, value) => setTasks(tasks.map(t => t.id === taskId ? { ...t, chunks: t.chunks.map(c => c.id === chunkId ? { ...c, [field]: value } : c) } : t));
   const deleteChunk = (taskId, chunkId) => setTasks(tasks.map(t => t.id === taskId ? { ...t, chunks: t.chunks.filter(c => c.id !== chunkId) } : t));
   const addNote = (e) => { e.preventDefault(); if (!noteInput.trim()) return; setNotes([{ id: Date.now(), text: noteInput }, ...notes]); setNoteInput(''); };
   const deleteNote = (id) => setNotes(notes.filter(n => n.id !== id));
-
   const getTaskCardStyle = (task) => {
     const isActive = activeTaskId === task.id;
     const base = "relative p-3 rounded-xl border transition-all duration-300 group ";
-    const theme = settings.darkMode 
-      ? isActive && isTimerRunning 
-        ? "bg-blue-900/30 border-blue-500/50 shadow-md ring-1 ring-blue-500/30"
-        : task.status === 'done'
-          ? "bg-gray-800/50 border-gray-700 opacity-60"
-          : "bg-gray-800 border-gray-700 hover:border-gray-600"
-      : isActive && isTimerRunning 
-        ? "bg-blue-50 border-blue-400 shadow-md ring-2 ring-blue-200 ring-offset-2"
-        : task.status === 'done'
-          ? "bg-gray-50 border-gray-200 opacity-70"
-          : "bg-white border-gray-200 hover:border-gray-300 shadow-sm";
+    const theme = settings.darkMode ? isActive && isTimerRunning ? "bg-blue-900/30 border-blue-500/50 shadow-md ring-1 ring-blue-500/30" : task.status === 'done' ? "bg-gray-800/50 border-gray-700 opacity-60" : "bg-gray-800 border-gray-700 hover:border-gray-600" : isActive && isTimerRunning ? "bg-blue-50 border-blue-400 shadow-md ring-2 ring-blue-200 ring-offset-2" : task.status === 'done' ? "bg-gray-50 border-gray-200 opacity-70" : "bg-white border-gray-200 hover:border-gray-300 shadow-sm";
     return base + theme;
   };
 
+  // --- RENDER ---
+  if (loadingAuth) return <div className="min-h-screen flex items-center justify-center text-gray-400"><Loader className="animate-spin mr-2"/> Loading FocusFlow...</div>;
+
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${settings.darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-800'} font-sans selection:bg-blue-200 selection:text-blue-900`}>
-      {/* Header */}
+    <div className={`min-h-screen transition-colors duration-300 ${settings.darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-800'} font-sans`}>
+      
+      {/* HEADER */}
       <header className={`sticky top-0 z-20 border-b transition-colors duration-300 ${settings.darkMode ? 'bg-gray-900/90 border-gray-800' : 'bg-white/90 border-gray-200'} backdrop-blur-sm`}>
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-600/20"><Clock size={18} /></div>
-            <h1 className="text-xl font-bold tracking-tight">FocusFlow <span className="text-xs font-normal opacity-50 ml-1">v2.2</span></h1>
+            <h1 className="text-xl font-bold tracking-tight hidden sm:block">FocusFlow <span className="text-xs font-normal opacity-50 ml-1">v3.0</span></h1>
           </div>
+          
           <div className="flex items-center gap-3">
+             {/* LOGIN / LOGOUT BUTTON */}
+             {isConfigured ? (
+               user ? (
+                 <button onClick={handleLogout} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border transition-colors ${settings.darkMode ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-100'}`}>
+                   <img src={user.photoURL} alt="" className="w-4 h-4 rounded-full"/>
+                   <span className="hidden sm:inline">Sign Out</span>
+                 </button>
+               ) : (
+                 <button onClick={handleLogin} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">
+                   <LogIn size={14}/> Sign In
+                 </button>
+               )
+             ) : (
+               <div className="flex items-center gap-1 text-[10px] text-amber-500 bg-amber-100/10 px-2 py-1 rounded border border-amber-500/20" title="Add Firebase keys to enable sync">
+                 <WifiOff size={12}/> <span className="hidden sm:inline">Local Mode</span>
+               </div>
+             )}
+
              <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full font-mono font-medium transition-colors ${isTimerRunning ? settings.darkMode ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-700' : settings.darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
                 {isTimerRunning ? <Play size={14} className="animate-pulse"/> : <Pause size={14}/>} {formatTime(timerTime)}
              </div>
@@ -308,12 +344,20 @@ export default function App() {
         </div>
       </header>
 
+      {/* LOGIN PROMPT (If Configured but logged out) */}
+      {isConfigured && !user && (
+        <div className="bg-blue-600 text-white text-center py-2 text-sm font-medium">
+          Sign in to sync your tasks across devices! ☁️
+        </div>
+      )}
+
+      {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* LEFT COLUMN: Planner */}
         <div className="lg:col-span-8 w-full">
           <div className="flex items-center justify-between mb-4">
             <h2 className={`text-lg font-semibold ${settings.darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Weekly Plan</h2>
-            <div className={`text-xs px-2 py-1 rounded border ${settings.darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500'}`}>Max 3 tasks/day • Drag to move</div>
+            <div className={`text-xs px-2 py-1 rounded border ${settings.darkMode ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-200 text-gray-500'}`}>Max 3 tasks/day</div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {DAYS.map((day, index) => {
@@ -397,10 +441,8 @@ export default function App() {
                  ))}
                </div>
                
-               {/* Cycle Reset (Hidden unless needed manually) */}
-               {cycleCount > 0 && (
-                 <button onClick={resetCycle} className="mt-4 text-xs text-gray-400 hover:text-red-400 underline decoration-dotted">Reset Cycle Count</button>
-               )}
+               {/* Cycle Reset */}
+               {cycleCount > 0 && ( <button onClick={resetCycle} className="mt-4 text-xs text-gray-400 hover:text-red-400 underline decoration-dotted">Reset Cycle Count</button> )}
             </div>
             
             {activeTaskId && ( <div className={`mx-6 mb-6 rounded-lg p-3 flex items-center gap-3 ${settings.darkMode ? 'bg-blue-900/20 border border-blue-500/20' : 'bg-blue-50 border border-blue-100'}`}><div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div><div className="text-left overflow-hidden"><div className="text-xs text-blue-500 font-semibold uppercase">Working on</div><div className={`text-sm font-medium truncate ${settings.darkMode ? 'text-gray-200' : 'text-gray-900'}`}>{tasks.find(t => t.id === activeTaskId)?.content || 'Unnamed Task'}</div></div></div> )}
@@ -428,6 +470,11 @@ export default function App() {
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
              <div className="flex items-center justify-between mb-3"><span className="font-medium flex items-center gap-2"><Volume2 size={16}/> Notification Sound</span><button onClick={() => setSettings({...settings, soundEnabled: !settings.soundEnabled})} className={`text-xs px-2 py-1 rounded ${settings.soundEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{settings.soundEnabled ? 'ON' : 'OFF'}</button></div>
              {settings.soundEnabled && ( <div className="grid grid-cols-3 gap-2">{['chime', 'retro', 'bell'].map(type => ( <button key={type} onClick={() => { setSettings({...settings, soundType: type}); playSound(type); }} className={`p-2 text-xs rounded border capitalize transition-all ${settings.soundType === type ? 'bg-blue-50 border-blue-500 text-blue-700 font-bold ring-1 ring-blue-500' : settings.darkMode ? 'bg-gray-900 border-gray-600 hover:bg-gray-800' : 'bg-white border-gray-200 hover:bg-gray-50'}`}>{type}</button> ))}</div> )}
+          </div>
+          {/* DATABASE STATUS IN SETTINGS */}
+          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
+             <span className="flex items-center gap-2 mb-1 font-semibold uppercase tracking-widest"><Database size={12}/> Data Storage</span>
+             {isFirebaseInitialized ? <span className="text-green-600">✓ Connected to Cloud Database</span> : <span className="text-amber-600">⚠ Using Local Storage (This Browser Only)</span>}
           </div>
         </div>
       </Modal>
