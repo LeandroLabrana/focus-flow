@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Plus, Trash2, Play, Pause, CheckCircle, Circle, Clock, Brain, 
   RotateCcw, Split, X, Moon, Sun, Settings, Volume2, VolumeX, 
-  GripVertical, Coffee, LogIn, LogOut, Database, WifiOff, Loader
+  GripVertical, Coffee, LogIn, LogOut, Database, WifiOff, Loader,
+  Zap, Shield, Layout, ArrowRight, Check
 } from 'lucide-react';
 
 // --- FIREBASE IMPORTS ---
@@ -22,7 +23,6 @@ import {
 } from "firebase/firestore";
 
 // --- ⚠️ CONFIGURATION ⚠️ ---
-// I have inserted your specific keys here:
 const firebaseConfig = {
   apiKey: "AIzaSyANB_OiYOp1Guz7pbSVbHVVm6QwAtDoJB8",
   authDomain: "focus-flow-app-53179.firebaseapp.com",
@@ -39,9 +39,6 @@ const MAX_TASKS_PER_DAY = 3;
 // --- INITIALIZE FIREBASE (Safe Mode) ---
 let auth, db, provider;
 let isFirebaseInitialized = false;
-
-// We check if keys are generic placeholders. If so, we stay in LocalStorage mode.
-// Since you provided real keys, this will now be TRUE.
 const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
 
 if (isConfigured) {
@@ -88,7 +85,111 @@ const playSound = (type) => {
   } catch (e) { console.error("Audio failed", e); }
 };
 
-// --- REUSABLE COMPONENTS ---
+// --- COMPONENTS ---
+
+// 1. LANDING PAGE COMPONENT
+const LandingPage = ({ onLogin, onGuest }) => {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white text-gray-800 font-sans selection:bg-blue-200">
+      {/* Navigation */}
+      <nav className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-600/20"><Clock size={18} /></div>
+          <h1 className="text-xl font-bold tracking-tight">FocusFlow</h1>
+        </div>
+        <div className="flex gap-4">
+          <button onClick={onLogin} className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Sign In</button>
+          <button onClick={onGuest} className="hidden sm:block px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-semibold hover:bg-blue-100 transition-colors">Try Demo</button>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <header className="max-w-5xl mx-auto px-6 py-20 text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-bold uppercase tracking-wider mb-6">
+          <Brain size={14} /> Designed for the ADHD Brain
+        </div>
+        <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 mb-6 leading-tight">
+          Master Your Week, <br/>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">One Chunk at a Time.</span>
+        </h1>
+        <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+          Stop getting overwhelmed by giant to-do lists. FocusFlow combines <b>Pomodoro timers</b>, <b>Task Chunking</b>, and an <b>External Brain</b> to help you enter the flow state and get things done.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button onClick={onLogin} className="w-full sm:w-auto px-8 py-4 rounded-full bg-blue-600 text-white font-bold text-lg shadow-xl shadow-blue-600/20 hover:bg-blue-700 hover:scale-105 transition-all flex items-center justify-center gap-2">
+            Get Started Free <ArrowRight size={20} />
+          </button>
+          <button onClick={onGuest} className="w-full sm:w-auto px-8 py-4 rounded-full bg-white border border-gray-200 text-gray-700 font-bold text-lg hover:border-gray-300 hover:bg-gray-50 transition-all">
+            Continue as Guest
+          </button>
+        </div>
+        <p className="mt-4 text-xs text-gray-400">No credit card required • Syncs with Google Account</p>
+      </header>
+
+      {/* Feature Grid */}
+      <section className="bg-white py-20 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="p-6 rounded-2xl bg-blue-50 border border-blue-100 hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mb-4"><Split size={24} /></div>
+            <h3 className="text-xl font-bold mb-2">Task Chunking</h3>
+            <p className="text-gray-600 leading-relaxed">Don't write "Write Report". Break it down into "Intro", "Data", and "Summary". Small steps kill procrastination.</p>
+          </div>
+          <div className="p-6 rounded-2xl bg-green-50 border border-green-100 hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-green-600 mb-4"><Clock size={24} /></div>
+            <h3 className="text-xl font-bold mb-2">Smart Pomodoro</h3>
+            <p className="text-gray-600 leading-relaxed">Integrated 25/5 timer that tracks your "Focus Cycles". It automatically suggests longer breaks after 4 sessions.</p>
+          </div>
+          <div className="p-6 rounded-2xl bg-purple-50 border border-purple-100 hover:shadow-lg transition-shadow">
+            <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 mb-4"><Brain size={24} /></div>
+            <h3 className="text-xl font-bold mb-2">External Brain</h3>
+            <p className="text-gray-600 leading-relaxed">Distracting thought? Dump it in the "External Brain" sidebar instantly and get back to work without losing focus.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Methodology Section */}
+      <section className="py-20 max-w-4xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold mb-4">Why This Works</h2>
+          <p className="text-gray-500">Based on proven ADHD productivity strategies.</p>
+        </div>
+        <div className="space-y-6">
+          <div className="flex gap-4 items-start">
+            <div className="mt-1 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0"><Check size={14} strokeWidth={3} /></div>
+            <div>
+              <h4 className="font-bold text-lg">The "Rule of 3"</h4>
+              <p className="text-gray-600">We limit you to 3 main tasks per day. This constraint forces prioritization and prevents the "Wall of Awful" overwhelm.</p>
+            </div>
+          </div>
+          <div className="flex gap-4 items-start">
+            <div className="mt-1 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0"><Check size={14} strokeWidth={3} /></div>
+            <div>
+              <h4 className="font-bold text-lg">Visual Urgency</h4>
+              <p className="text-gray-600">The timer isn't just numbers; it's a visual bar that shrinks. This creates a "time horizon" that helps combat time blindness.</p>
+            </div>
+          </div>
+          <div className="flex gap-4 items-start">
+            <div className="mt-1 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0"><Check size={14} strokeWidth={3} /></div>
+            <div>
+              <h4 className="font-bold text-lg">Dopamine Feedback</h4>
+              <p className="text-gray-600">Satisfying sounds and "check-off" animations provide the micro-rewards your brain needs to stay engaged.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-50 py-10 text-center border-t border-gray-200">
+        <div className="flex items-center justify-center gap-2 mb-4 opacity-50">
+          <Clock size={20} /> <span className="font-bold">FocusFlow</span>
+        </div>
+        <p className="text-sm text-gray-400">© 2025 FocusFlow. Built for the ADHD Community.</p>
+      </footer>
+    </div>
+  );
+};
+
+// 2. MODAL COMPONENT
 const Modal = ({ isOpen, onClose, title, children, isDark }) => {
   if (!isOpen) return null;
   return (
@@ -104,11 +205,12 @@ const Modal = ({ isOpen, onClose, title, children, isDark }) => {
   );
 };
 
-// --- MAIN APPLICATION ---
+// --- MAIN APPLICATION LOGIC ---
 export default function App() {
   // --- USER AUTH STATE ---
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const [showLanding, setShowLanding] = useState(true); // Control landing page view
 
   // --- DATA STATE ---
   const [settings, setSettings] = useState({
@@ -138,6 +240,7 @@ export default function App() {
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         setUser(currentUser);
         setLoadingAuth(false);
+        if (currentUser) setShowLanding(false); // Auto-enter app on login
       });
       return () => unsubscribe();
     } else {
@@ -147,7 +250,6 @@ export default function App() {
 
   // 2. Load Data (Firestore OR LocalStorage)
   useEffect(() => {
-    // Mode A: Firebase Realtime Sync
     if (isFirebaseInitialized && user) {
       const userRef = doc(db, "users", user.uid);
       const unsubscribe = onSnapshot(userRef, (docSnap) => {
@@ -157,15 +259,11 @@ export default function App() {
           if (data.tasks) setTasks(data.tasks);
           if (data.notes) setNotes(data.notes);
           if (data.cycleCount !== undefined) setCycleCount(data.cycleCount);
-        } else {
-          // New user found in DB? Create defaults? 
-          // We handle this by saving current state on next update
         }
       });
       return () => unsubscribe();
-    } 
-    // Mode B: LocalStorage (Fallback)
-    else if (!isFirebaseInitialized || !user) {
+    } else if (!user && !showLanding) {
+      // Load local storage if in Guest Mode
       const sTasks = localStorage.getItem('focusflow_tasks');
       const sNotes = localStorage.getItem('focusflow_notes');
       const sSettings = localStorage.getItem('focusflow_settings');
@@ -176,21 +274,15 @@ export default function App() {
       if (sSettings) setSettings(JSON.parse(sSettings));
       if (sCycle) setCycleCount(parseInt(sCycle));
     }
-  }, [user]);
+  }, [user, showLanding]);
 
-  // 3. Save Data (Debounced/Triggered on change)
+  // 3. Save Data
   const saveData = async () => {
     if (isFirebaseInitialized && user) {
-      // Save to Cloud
       try {
-        await setDoc(doc(db, "users", user.uid), {
-          tasks, notes, settings, cycleCount
-        }, { merge: true });
-      } catch (e) {
-        console.error("Error saving to cloud:", e);
-      }
+        await setDoc(doc(db, "users", user.uid), { tasks, notes, settings, cycleCount }, { merge: true });
+      } catch (e) { console.error("Error saving:", e); }
     } else {
-      // Save to Local
       localStorage.setItem('focusflow_tasks', JSON.stringify(tasks));
       localStorage.setItem('focusflow_notes', JSON.stringify(notes));
       localStorage.setItem('focusflow_settings', JSON.stringify(settings));
@@ -198,16 +290,13 @@ export default function App() {
     }
   };
 
-  // Trigger save on important changes
   useEffect(() => { saveData(); }, [tasks, notes, cycleCount]);
   
-  // Settings also control CSS immediately
   useEffect(() => { 
     saveData();
     if (settings.darkMode) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
   }, [settings]);
-
 
   // --- TIMER LOGIC ---
   useEffect(() => {
@@ -251,73 +340,53 @@ export default function App() {
     if (!isFirebaseInitialized) return;
     try { 
       await signOut(auth); 
-      setTasks([]); setNotes([]); setCycleCount(0); // Clear state on logout
+      setUser(null);
+      setShowLanding(true); // Go back to landing page
+      setTasks([]); setNotes([]); setCycleCount(0); 
     } catch (e) { console.error(e); }
   };
 
-  // ... (Previous Helper Functions: toggleTimer, addTask, etc. remain the same) ...
+  // Helper Wrappers
   const toggleTimer = () => setIsTimerRunning(!isTimerRunning);
-  const resetTimer = () => {
-    setIsTimerRunning(false);
-    const time = timerMode === 'focus' ? settings.focusTime : timerMode === 'short' ? settings.shortBreak : settings.longBreak;
-    setTimerTime(time * 60);
-  };
-  const switchMode = (mode) => {
-    setIsTimerRunning(false); setTimerMode(mode);
-    const time = mode === 'focus' ? settings.focusTime : mode === 'short' ? settings.shortBreak : settings.longBreak;
-    setTimerTime(time * 60);
-  };
+  const resetTimer = () => { setIsTimerRunning(false); setTimerTime((timerMode === 'focus' ? settings.focusTime : timerMode === 'short' ? settings.shortBreak : settings.longBreak) * 60); };
+  const switchMode = (mode) => { setIsTimerRunning(false); setTimerMode(mode); setTimerTime((mode === 'focus' ? settings.focusTime : mode === 'short' ? settings.shortBreak : settings.longBreak) * 60); };
   const resetCycle = () => setCycleCount(0);
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60); const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  const addTask = (dayIndex) => {
-    if (tasks.filter(t => t.dayIndex === dayIndex).length >= MAX_TASKS_PER_DAY) return;
-    setTasks([...tasks, { id: Date.now().toString(), dayIndex, content: '', status: 'todo', chunks: [] }]);
-  };
+  const formatTime = (seconds) => { const mins = Math.floor(seconds / 60); const secs = seconds % 60; return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`; };
+  const addTask = (dayIndex) => { if (tasks.filter(t => t.dayIndex === dayIndex).length >= MAX_TASKS_PER_DAY) return; setTasks([...tasks, { id: Date.now().toString(), dayIndex, content: '', status: 'todo', chunks: [] }]); };
   const updateTask = (id, field, value) => setTasks(tasks.map(t => t.id === id ? { ...t, [field]: value } : t));
   const deleteTask = (id) => { setTasks(tasks.filter(t => t.id !== id)); if(activeTaskId === id) { setIsTimerRunning(false); setActiveTaskId(null); }};
-  const activateTask = (task) => {
-    if (activeTaskId === task.id) { setIsTimerRunning(!isTimerRunning); } 
-    else { setActiveTaskId(task.id); setTimerMode('focus'); setTimerTime(settings.focusTime * 60); setIsTimerRunning(true); updateTask(task.id, 'status', 'wip'); }
-  };
+  const activateTask = (task) => { if (activeTaskId === task.id) { setIsTimerRunning(!isTimerRunning); } else { setActiveTaskId(task.id); setTimerMode('focus'); setTimerTime(settings.focusTime * 60); setIsTimerRunning(true); updateTask(task.id, 'status', 'wip'); }};
   const handleDragStart = (e, taskId) => { setDraggedTaskId(taskId); e.target.style.opacity = '0.5'; };
   const handleDragEnd = (e) => { e.target.style.opacity = '1'; setDraggedTaskId(null); };
   const handleDragOver = (e) => { e.preventDefault(); };
-  const handleDrop = (e, dayIndex) => {
-    e.preventDefault();
-    if (tasks.filter(t => t.dayIndex === dayIndex).length >= MAX_TASKS_PER_DAY) return;
-    if (draggedTaskId) setTasks(tasks.map(t => t.id === draggedTaskId ? { ...t, dayIndex: dayIndex } : t));
-  };
+  const handleDrop = (e, dayIndex) => { e.preventDefault(); if (tasks.filter(t => t.dayIndex === dayIndex).length >= MAX_TASKS_PER_DAY) return; if (draggedTaskId) setTasks(tasks.map(t => t.id === draggedTaskId ? { ...t, dayIndex: dayIndex } : t)); };
   const addChunk = (taskId) => setTasks(tasks.map(t => t.id === taskId ? { ...t, chunks: [...t.chunks, { id: Date.now(), text: '', done: false }] } : t));
   const updateChunk = (taskId, chunkId, field, value) => setTasks(tasks.map(t => t.id === taskId ? { ...t, chunks: t.chunks.map(c => c.id === chunkId ? { ...c, [field]: value } : c) } : t));
   const deleteChunk = (taskId, chunkId) => setTasks(tasks.map(t => t.id === taskId ? { ...t, chunks: t.chunks.filter(c => c.id !== chunkId) } : t));
   const addNote = (e) => { e.preventDefault(); if (!noteInput.trim()) return; setNotes([{ id: Date.now(), text: noteInput }, ...notes]); setNoteInput(''); };
   const deleteNote = (id) => setNotes(notes.filter(n => n.id !== id));
-  const getTaskCardStyle = (task) => {
-    const isActive = activeTaskId === task.id;
-    const base = "relative p-3 rounded-xl border transition-all duration-300 group ";
-    const theme = settings.darkMode ? isActive && isTimerRunning ? "bg-blue-900/30 border-blue-500/50 shadow-md ring-1 ring-blue-500/30" : task.status === 'done' ? "bg-gray-800/50 border-gray-700 opacity-60" : "bg-gray-800 border-gray-700 hover:border-gray-600" : isActive && isTimerRunning ? "bg-blue-50 border-blue-400 shadow-md ring-2 ring-blue-200 ring-offset-2" : task.status === 'done' ? "bg-gray-50 border-gray-200 opacity-70" : "bg-white border-gray-200 hover:border-gray-300 shadow-sm";
-    return base + theme;
-  };
+  const getTaskCardStyle = (task) => { const isActive = activeTaskId === task.id; const base = "relative p-3 rounded-xl border transition-all duration-300 group "; const theme = settings.darkMode ? isActive && isTimerRunning ? "bg-blue-900/30 border-blue-500/50 shadow-md ring-1 ring-blue-500/30" : task.status === 'done' ? "bg-gray-800/50 border-gray-700 opacity-60" : "bg-gray-800 border-gray-700 hover:border-gray-600" : isActive && isTimerRunning ? "bg-blue-50 border-blue-400 shadow-md ring-2 ring-blue-200 ring-offset-2" : task.status === 'done' ? "bg-gray-50 border-gray-200 opacity-70" : "bg-white border-gray-200 hover:border-gray-300 shadow-sm"; return base + theme; };
 
   // --- RENDER ---
   if (loadingAuth) return <div className="min-h-screen flex items-center justify-center text-gray-400"><Loader className="animate-spin mr-2"/> Loading FocusFlow...</div>;
 
+  // 1. SHOW LANDING PAGE
+  if (showLanding && !user) {
+    return <LandingPage onLogin={handleLogin} onGuest={() => setShowLanding(false)} />;
+  }
+
+  // 2. SHOW MAIN APP
   return (
     <div className={`min-h-screen transition-colors duration-300 ${settings.darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-800'} font-sans`}>
-      
       {/* HEADER */}
       <header className={`sticky top-0 z-20 border-b transition-colors duration-300 ${settings.darkMode ? 'bg-gray-900/90 border-gray-800' : 'bg-white/90 border-gray-200'} backdrop-blur-sm`}>
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg shadow-blue-600/20"><Clock size={18} /></div>
-            <h1 className="text-xl font-bold tracking-tight hidden sm:block">FocusFlow <span className="text-xs font-normal opacity-50 ml-1">v3.0</span></h1>
+            <h1 className="text-xl font-bold tracking-tight hidden sm:block">FocusFlow <span className="text-xs font-normal opacity-50 ml-1">v4.0</span></h1>
           </div>
           
           <div className="flex items-center gap-3">
-             {/* LOGIN / LOGOUT BUTTON */}
              {isConfigured ? (
                user ? (
                  <button onClick={handleLogout} className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border transition-colors ${settings.darkMode ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-200 hover:bg-gray-100'}`}>
@@ -325,14 +394,10 @@ export default function App() {
                    <span className="hidden sm:inline">Sign Out</span>
                  </button>
                ) : (
-                 <button onClick={handleLogin} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">
-                   <LogIn size={14}/> Sign In
-                 </button>
+                 <button onClick={handleLogin} className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"><LogIn size={14}/> Sign In</button>
                )
              ) : (
-               <div className="flex items-center gap-1 text-[10px] text-amber-500 bg-amber-100/10 px-2 py-1 rounded border border-amber-500/20" title="Add Firebase keys to enable sync">
-                 <WifiOff size={12}/> <span className="hidden sm:inline">Local Mode</span>
-               </div>
+               <div className="flex items-center gap-1 text-[10px] text-amber-500 bg-amber-100/10 px-2 py-1 rounded border border-amber-500/20" title="Add Firebase keys to enable sync"><WifiOff size={12}/> <span className="hidden sm:inline">Local Mode</span></div>
              )}
 
              <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full font-mono font-medium transition-colors ${isTimerRunning ? settings.darkMode ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-700' : settings.darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
@@ -344,12 +409,8 @@ export default function App() {
         </div>
       </header>
 
-      {/* LOGIN PROMPT (If Configured but logged out) */}
-      {isConfigured && !user && (
-        <div className="bg-blue-600 text-white text-center py-2 text-sm font-medium">
-          Sign in to sync your tasks across devices! ☁️
-        </div>
-      )}
+      {/* LOGIN PROMPT */}
+      {isConfigured && !user && ( <div className="bg-blue-600 text-white text-center py-2 text-sm font-medium">Guest Mode: Tasks save to this browser only. <button onClick={handleLogin} className="underline hover:text-blue-100 ml-1">Sign In to Sync</button></div> )}
 
       {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -474,7 +535,7 @@ export default function App() {
           {/* DATABASE STATUS IN SETTINGS */}
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
              <span className="flex items-center gap-2 mb-1 font-semibold uppercase tracking-widest"><Database size={12}/> Data Storage</span>
-             {isFirebaseInitialized ? <span className="text-green-600">✓ Connected to Cloud Database</span> : <span className="text-amber-600">⚠ Using Local Storage (This Browser Only)</span>}
+             {isFirebaseInitialized && user ? <span className="text-green-600">✓ Connected to Cloud Database</span> : <span className="text-amber-600">⚠ Using Local Storage (This Browser Only)</span>}
           </div>
         </div>
       </Modal>
